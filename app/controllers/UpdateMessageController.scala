@@ -17,11 +17,10 @@ class UpdateMessageController @Inject()(components: ControllerComponents)
 
   def index(messageId: Long): Action[AnyContent] = Action { implicit request =>
     val result     = Message.findById(messageId).get
-    val filledForm = form.fill(MessageForm(result.id, result.body))
+    val filledForm = form.fill(MessageForm(result.id, result.title.getOrElse(""), result.body)) // titleが空な場合は""とします
     Ok(views.html.edit(filledForm))
   }
 
-  // 追加
   def update: Action[AnyContent] = Action { implicit request =>
     form
       .bindFromRequest()
@@ -32,6 +31,7 @@ class UpdateMessageController @Inject()(components: ControllerComponents)
             .updateById(model.id.get)
             .withAttributes(
               'body     -> model.body,
+              'title    -> model.title, // titleを追加
               'updateAt -> ZonedDateTime.now()
             )
           if (result > 0)

@@ -6,11 +6,11 @@ import javax.inject._
 import models.Message
 import play.api.i18n.{ I18nSupport, Messages }
 import play.api.mvc._
-import scalikejdbc.AutoSession
+import services.MessageService
 
 @Singleton
-class CreateMessageController @Inject()(components: ControllerComponents)
-  extends AbstractController(components)
+class CreateMessageController @Inject()(components: ControllerComponents, messageService: MessageService)
+    extends AbstractController(components)
     with I18nSupport
     with MessageControllerSupport {
 
@@ -18,16 +18,14 @@ class CreateMessageController @Inject()(components: ControllerComponents)
     Ok(views.html.create(form))
   }
 
-  // 追加
   def create: Action[AnyContent] = Action { implicit request =>
     form
       .bindFromRequest()
       .fold(
         formWithErrors => BadRequest(views.html.create(formWithErrors)), { model =>
-          implicit val session = AutoSession
           val now              = ZonedDateTime.now()
-          val message          = Message(None, model.body, now, now)
-          val result           = Message.create(message)
+          val message          = Message(None, Some(model.title), model.body, now, now) // titleを追加
+          val result           = messageService.create(message) // サービスに変更する
           if (result > 0) {
             Redirect(routes.GetMessagesController.index())
           } else {
